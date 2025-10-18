@@ -1,0 +1,71 @@
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(10, 11); // RX, TX (azul, naranja)
+
+bool enviardatos = true;
+bool fallodatos = false;
+
+long nextMillis;  // Envia datos
+long nextMillis2; // Error de datos
+const int interval = 1000;
+const int interval2 = 4000;
+
+#include <DHT.h>
+#define DHTPIN 2
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+const int LedSat = 4;      //Envia datos
+const int LedDatos = 7;   //Error de datos
+
+void setup(){
+   Serial.begin(9600);
+   Serial.println("Empezamos la recepción");
+   mySerial.begin(9600);
+   dht.begin();
+
+   pinMode(LedSat, OUTPUT);
+   pinMode(LedDatos, OUTPUT);
+   digitalWrite(LedSat, LOW);
+   nextMillis = millis() + interval;
+}   
+void loop(){
+   if (millis() >= nextMillis){
+      digitalWrite(LedSat,LOW);
+   }
+   if (mySerial.available()) {
+      String data = mySerial.readStringUntil('\n'); // Lee orden
+      Serial.println(data);
+
+      if (data == "Reanudar"){
+         enviardatos = true;
+      } 
+      else if (data == "Parar"){
+         enviardatos = false;
+      } 
+      else if (data == "Inicio"){
+         enviardatos = true;
+      }
+      else if (enviardatos==true){     // Si no es orden envia datos captados
+         digitalWrite(LedSat, HIGH);
+         nextMillis = millis() + interval;
+         
+         float hum = dht.readHumidity();
+         float temp = dht.readTemperature();
+         if ((isnan(hum) || isnan(temp)) && (fallodatos == false)){  // Empieza ha no captar datos
+            nextMillis2 = millis() + interval2;
+            fallodatos = true;
+         }
+         else if (!(isnan(hum) || isnan(temp))){   // Capta datos
+            fallodatos = false;
+            digitalWrite(LedDatos, LOW);  // Envia datos
+            mySerial.print("T:");   
+            mySerial.print(temp);
+            mySerial.print(":H:");
+            mySerial.println(hum);
+         }
+         else if ((millis() >= nextMillis2) && (fallodatos == true)){   // No ha captado datos durante X tiempo
+            digitalWrite(LedDatos, HIGH);
+         }
+      }  
+   } 
+}
