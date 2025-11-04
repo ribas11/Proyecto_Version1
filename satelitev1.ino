@@ -6,8 +6,9 @@ bool fallodatos = false;
 
 long nextMillis;  // Envia datos
 long nextMillis2; // Error de datos
-const int interval = 1000;
+int interval = 1000;
 const int interval2 = 4000;
+float periodoTH;
 
 #include <DHT.h>
 #define DHTPIN 2
@@ -36,16 +37,31 @@ void loop(){
       String data = mySerial.readStringUntil('\n'); // Lee orden
       Serial.println(data);
 
-      if (data == "Reanudar"){
+      int fin = data.indexOf(':',0); 
+      int codigo = data.substring(0, fin).toInt(); 
+      int inicio = fin+1;
+      if (codigo == 1){
+         fin=data.indexOf(':',inicio);
+         periodoTH = data.substring(inicio, fin).toInt();
+         interval = int(periodoTH)*1000;
+      }
+      if (codigo == 0){
+         
+      }
+
+
+
+
+
+
+      if (data == "Reanudar" || data == "Inicio"){
          enviardatos = true;
+         nextMillis = millis() + interval; // Reinicia el temporizador para evitar salto
       } 
-      else if (data == "Parar"){
+      if (data == "Parar"){
          enviardatos = false;
       } 
-      else if (data == "Inicio"){
-         enviardatos = true;
-      }
-      else if (enviardatos==true){     // Si no es orden envia datos captados
+      if (enviardatos==true && millis() >= nextMillis){     // Si no es orden envia datos captados
          digitalWrite(LedSat, HIGH);
          nextMillis = millis() + interval;
          
@@ -58,9 +74,9 @@ void loop(){
          else if (!(isnan(hum) || isnan(temp))){   // Capta datos
             fallodatos = false;
             digitalWrite(LedDatos, LOW);  // Envia datos
-            mySerial.print("T:");   
+            mySerial.print("1:");
             mySerial.print(temp);
-            mySerial.print(":H:");
+            mySerial.print(":");
             mySerial.println(hum);
          }
          else if ((millis() >= nextMillis2) && (fallodatos == true)){   // No ha captado datos durante X tiempo
