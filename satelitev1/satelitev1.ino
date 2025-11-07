@@ -17,6 +17,11 @@ DHT dht(DHTPIN, DHTTYPE);
 
 const int LedSat = 4;      //Envia datos
 const int LedDatos = 7;   //Error de datos
+int numdatosT = 0; //suma de los datos enviados de temperatura
+int contnumdatosT = 0; // contador del numero de datos enviados de temperatura
+int mediaT = 0; // Media de la temperatura
+const int Tmax = 32; // Tempertura maxima que no volem superar
+int Tmaxsobrepasada = 0; // La temperatura màxima ha sigut  sobrepasada
 
 void setup(){
    Serial.begin(9600);
@@ -78,9 +83,26 @@ void loop(){
             mySerial.print(temp);
             mySerial.print(":");
             mySerial.println(hum);
+            contnumdatosT = contnumdatosT+1;
+            numdatosT = numdatosT + temp;
          }
          else if ((millis() >= nextMillis2) && (fallodatos == true)){   // No ha captado datos durante X tiempo
             digitalWrite(LedDatos, HIGH);
+         }
+         if(contnumdatosT == 10){
+            media = numdatosT / 10;
+            contnumdatosT = 0;
+            if (media < Tmax){
+               Tmaxsobrepasada = 0;
+            }
+            else{
+               Tmaxsobrepasada = 1;
+            }
+            mySerial.print("4:");
+            mySerial.print(media);
+            mySerial.Print(":");
+            mySerial.print(Tmaxsobrepasada);
+            numdatosT=0;
          }
       }  
    } 
